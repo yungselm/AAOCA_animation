@@ -163,6 +163,40 @@ def indexing_points(df):
     
     return df_indexed
 
+def calculate_centroid(df):
+    """
+    Calculates the centroid of points for each frame.
+
+    Parameters:
+    df (pd.DataFrame): DataFrame containing the coordinates and frame_id.
+
+    Returns:
+    pd.DataFrame: DataFrame with centroid_x and centroid_y columns added.
+    """
+    centroids = df.groupby('frame_id').apply(lambda x: pd.Series({
+        'centroid_x': x['x_coord_rotated'].mean(),
+        'centroid_y': x['y_coord_rotated'].mean(),
+        'centroid_z': x['z_coord'].mean()
+    })).reset_index()
+    
+    return pd.merge(df, centroids, on='frame_id')
+
+def normalize_to_centroid(df):
+    """
+    Normalizes the coordinates to the centroid for each frame.
+
+    Parameters:
+    df (pd.DataFrame): DataFrame with original and centroid coordinates.
+
+    Returns:
+    pd.DataFrame: DataFrame with normalized coordinates.
+    """
+    df['x_coord_normalized'] = df['x_coord_rotated'] - df['centroid_x']
+    df['y_coord_normalized'] = df['y_coord_rotated'] - df['centroid_y']
+    df['z_coord_normalized'] = df['z_coord']
+    
+    return df
+
 def plot_rotated_points(df, point1, point2, output_dir, angle):
     """
     Plots the rotated points and the line between the farthest points with equal scaling for the axes.
@@ -197,6 +231,7 @@ def plot_rotated_points(df, point1, point2, output_dir, angle):
         plt.close()
 
 
+
 # Read data
 diastolic_data = read_data('test_csv_files/diastolic_contours.csv')
 systolic_data = read_data('test_csv_files/systolic_contours.csv')
@@ -214,8 +249,10 @@ point1_dia, point2_dia, _ = find_farthest_points(diastolic_data)
 optimal_angle_dia = find_optimal_rotation(diastolic_data, point1_dia, point2_dia)
 diastolic_data_rotated = rotate_points(diastolic_data, optimal_angle_dia)
 df_indexed_dia = indexing_points(diastolic_data_rotated)
-df_indexed_dia.to_csv('indexed_points_dia.csv', index=False)
-
+# normalize to centroid
+diastolic_data_with_centroids = calculate_centroid(diastolic_data_rotated)
+diastolic_data_normalized = normalize_to_centroid(diastolic_data_with_centroids)
+diastolic_data_normalized.to_csv('indexed_points_dia.csv', index=False)
 # Plot rotated points for diastolic data
 plot_rotated_points(diastolic_data_rotated, point1_dia, point2_dia, 'plots_dia', optimal_angle_dia)
 
@@ -223,7 +260,14 @@ plot_rotated_points(diastolic_data_rotated, point1_dia, point2_dia, 'plots_dia',
 point1_sys, point2_sys, _ = find_farthest_points(systolic_data)
 optimal_angle_sys = find_optimal_rotation(systolic_data, point1_sys, point2_sys)
 systolic_data_rotated = rotate_points(systolic_data, optimal_angle_sys)
-df_indexed_sys = indexing_points(systolic_data_rotated)
+systolic_data_with_centroids = calculate_centroid(systolic_data_rotated)
+systolic_data_normalized = normalize_to_centroid(systolic_data_with_centroids)
+systolic_data_normalized = systolic_data_normalized.drop(columns=['x_coord', 'y_coord', 'z_coord'])
+systolic_data_normalized = systolic_data_normalized.rename(columns={'x_coord_normalized': 'x_coord', 
+                                                                    'y_coord_normalized': 'y_coord',
+                                                                    'z_coord_normalized': 'z_coord'})
+
+df_indexed_sys = indexing_points(systolic_data_normalized)
 df_indexed_sys.to_csv('indexed_points_sys.csv', index=False)
 
 # Plot rotated points for systolic data
@@ -278,7 +322,7 @@ def plot_indices(df, output_dir, angle, frame_id):
 
 # Assuming the DataFrames and indexing are already done
 # Select a specific frame_id to plot
-specific_frame_id = 571  # Change this to the frame_id you want to check
+specific_frame_id = 0  # Change this to the frame_id you want to check
 
 # Apply indexing to the diastolic data
 df_indexed_dia = indexing_points(diastolic_data)
