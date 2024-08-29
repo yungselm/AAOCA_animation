@@ -256,22 +256,17 @@ diastolic_data_normalized.to_csv('indexed_points_dia.csv', index=False)
 # Plot rotated points for diastolic data
 plot_rotated_points(diastolic_data_rotated, point1_dia, point2_dia, 'plots_dia', optimal_angle_dia)
 
-# Find farthest points for systolic data
+# Find farthest points for diastolic data
 point1_sys, point2_sys, _ = find_farthest_points(systolic_data)
 optimal_angle_sys = find_optimal_rotation(systolic_data, point1_sys, point2_sys)
 systolic_data_rotated = rotate_points(systolic_data, optimal_angle_sys)
+df_indexed_sys = indexing_points(systolic_data_rotated)
+# normalize to centroid
 systolic_data_with_centroids = calculate_centroid(systolic_data_rotated)
 systolic_data_normalized = normalize_to_centroid(systolic_data_with_centroids)
-systolic_data_normalized = systolic_data_normalized.drop(columns=['x_coord', 'y_coord', 'z_coord'])
-systolic_data_normalized = systolic_data_normalized.rename(columns={'x_coord_normalized': 'x_coord', 
-                                                                    'y_coord_normalized': 'y_coord',
-                                                                    'z_coord_normalized': 'z_coord'})
-
-df_indexed_sys = indexing_points(systolic_data_normalized)
-df_indexed_sys.to_csv('indexed_points_sys.csv', index=False)
-
-# Plot rotated points for systolic data
-plot_rotated_points(systolic_data_rotated, point1_sys, point2_sys, 'plots_sys', optimal_angle_sys)
+systolic_data_normalized.to_csv('indexed_points_sys.csv', index=False)
+# Plot rotated points for diastolic data
+plot_rotated_points(systolic_data_rotated, point1_sys, point2_sys, 'plots_dia', optimal_angle_sys)
 
 
 

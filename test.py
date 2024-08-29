@@ -24,6 +24,7 @@ df_dia['z_coord'] = np.abs(df_dia['z_coord'] - df_dia['z_coord'].max())
 
 print(df_dia.head(50))
 print(df_sys.head(50))
+print(df_dia.columns)
 
 def plot_3d_planes(df):
     """
@@ -70,6 +71,6 @@ def plot_3d_planes(df):
     plt.show()
 
 # Example usage with the provided DataFrame
+# Make sure your DataFrame is loaded as `df`
 plot_3d_planes(df_dia)
-
 
