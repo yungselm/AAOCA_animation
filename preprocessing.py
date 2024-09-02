@@ -1,70 +1,70 @@
-import os
-import hydra
-from omegaconf import DictConfig
+# import os
+# import hydra
+# from omegaconf import DictConfig
 
-import numpy as np
-import pandas as pd
-pd.options.mode.chained_assignment = None  # default='warn'
-import warnings
-warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
-warnings.simplefilter(action='ignore', category=DeprecationWarning)
-import matplotlib.pyplot as plt
-from itertools import combinations
+# import numpy as np
+# import pandas as pd
+# pd.options.mode.chained_assignment = None  # default='warn'
+# import warnings
+# warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
+# warnings.simplefilter(action='ignore', category=DeprecationWarning)
+# import matplotlib.pyplot as plt
+# from itertools import combinations
 
-@hydra.main(version_base=None, config_path='.', config_name='config')
-class Preprocessing:
-    """ Takes coordinates from IVUS frames, and reduces the number of points, rotates the contour
-    and further translates the whole contour to the centroid.
+# @hydra.main(version_base=None, config_path='.', config_name='config')
+# class Preprocessing:
+#     """ Takes coordinates from IVUS frames, and reduces the number of points, rotates the contour
+#     and further translates the whole contour to the centroid.
     
-    Parameters: 
-    Input path, output path and number of points per contour can be defined in the config
-    file. 
+#     Parameters: 
+#     Input path, output path and number of points per contour can be defined in the config
+#     file. 
     
-    Returns: Dataframe with adjusted coordinates."""
+#     Returns: Dataframe with adjusted coordinates."""
 
-    def __init__(self, config: DictConfig) -> None:
-        self.config = config
-        self.diastolic_data = read_data(self.config.preprocessing.diastolic_df)
-        self.systolic_data = read_data(self.config.preprocessing.systolic_df)
-        self.diastolic_data = self.diastolic_data.reset_index()
-        self.systolic_data = self.systolic_data.reset_index()
+#     def __init__(self, config: DictConfig) -> None:
+#         self.config = config
+#         self.diastolic_data = read_data(self.config.preprocessing.diastolic_df)
+#         self.systolic_data = read_data(self.config.preprocessing.systolic_df)
+#         self.diastolic_data = self.diastolic_data.reset_index()
+#         self.systolic_data = self.systolic_data.reset_index()
 
-    def __call__(self, config: DictConfig) -> None:
-        self.diastolic_data = pd.read_csv(self.config.preprocessing.redcap_database)
-        self.systolic_data = pd.read_csv(self.config.preprocessing.redcap_database)
-        dia_df = self.diastolic_data.groupby('frame_id').apply(lambda x: x.iloc[::int(np.ceil(len(x)/config.preprocessing.n_points))]).reset_index(drop=True)
-        sys_df = self.systolic_data.groupby('frame_id').apply(lambda x: x.iloc[::int(np.ceil(len(x)/config.preprocessing.n_points))]).reset_index(drop=True)
+#     def __call__(self, config: DictConfig) -> None:
+#         self.diastolic_data = pd.read_csv(self.config.preprocessing.redcap_database)
+#         self.systolic_data = pd.read_csv(self.config.preprocessing.redcap_database)
+#         dia_df = self.diastolic_data.groupby('frame_id').apply(lambda x: x.iloc[::int(np.ceil(len(x)/config.preprocessing.n_points))]).reset_index(drop=True)
+#         sys_df = self.systolic_data.groupby('frame_id').apply(lambda x: x.iloc[::int(np.ceil(len(x)/config.preprocessing.n_points))]).reset_index(drop=True)
+
         
-        
-        return self.diastolic_data, self.systolic_data
+#         return self.diastolic_data, self.systolic_data
 
-# For every frame_id keep only 20 evenly spaced points
-diastolic_data = 
-systolic_data = systolic_data.groupby('frame_id').apply(lambda x: x.iloc[::int(np.ceil(len(x)/20))]).reset_index(drop=True)
+# # For every frame_id keep only 20 evenly spaced points
+# diastolic_data = 
+# systolic_data = systolic_data.groupby('frame_id').apply(lambda x: x.iloc[::int(np.ceil(len(x)/20))]).reset_index(drop=True)
 
-# Find farthest points for diastolic data
-point1_dia, point2_dia, _ = find_farthest_points(diastolic_data)
-optimal_angle_dia = find_optimal_rotation(diastolic_data, point1_dia, point2_dia)
-diastolic_data_rotated = rotate_points(diastolic_data, optimal_angle_dia)
-df_indexed_dia = indexing_points(diastolic_data_rotated)
-# normalize to centroid
-diastolic_data_with_centroids = calculate_centroid(diastolic_data_rotated)
-diastolic_data_normalized = normalize_to_centroid(diastolic_data_with_centroids)
-diastolic_data_normalized.to_csv('indexed_points_dia.csv', index=False)
-# Plot rotated points for diastolic data
-plot_rotated_points(diastolic_data_rotated, point1_dia, point2_dia, 'plots_dia', optimal_angle_dia)
+# # Find farthest points for diastolic data
+# point1_dia, point2_dia, _ = find_farthest_points(diastolic_data)
+# optimal_angle_dia = find_optimal_rotation(diastolic_data, point1_dia, point2_dia)
+# diastolic_data_rotated = rotate_points(diastolic_data, optimal_angle_dia)
+# df_indexed_dia = indexing_points(diastolic_data_rotated)
+# # normalize to centroid
+# diastolic_data_with_centroids = calculate_centroid(diastolic_data_rotated)
+# diastolic_data_normalized = normalize_to_centroid(diastolic_data_with_centroids)
+# diastolic_data_normalized.to_csv('indexed_points_dia.csv', index=False)
+# # Plot rotated points for diastolic data
+# plot_rotated_points(diastolic_data_rotated, point1_dia, point2_dia, 'plots_dia', optimal_angle_dia)
 
-# Find farthest points for diastolic data
-point1_sys, point2_sys, _ = find_farthest_points(systolic_data)
-optimal_angle_sys = find_optimal_rotation(systolic_data, point1_sys, point2_sys)
-systolic_data_rotated = rotate_points(systolic_data, optimal_angle_sys)
-df_indexed_sys = indexing_points(systolic_data_rotated)
-# normalize to centroid
-systolic_data_with_centroids = calculate_centroid(systolic_data_rotated)
-systolic_data_normalized = normalize_to_centroid(systolic_data_with_centroids)
-systolic_data_normalized.to_csv('indexed_points_sys.csv', index=False)
-# Plot rotated points for diastolic data
-plot_rotated_points(systolic_data_rotated, point1_sys, point2_sys, 'plots_dia', optimal_angle_sys)
+# # Find farthest points for diastolic data
+# point1_sys, point2_sys, _ = find_farthest_points(systolic_data)
+# optimal_angle_sys = find_optimal_rotation(systolic_data, point1_sys, point2_sys)
+# systolic_data_rotated = rotate_points(systolic_data, optimal_angle_sys)
+# df_indexed_sys = indexing_points(systolic_data_rotated)
+# # normalize to centroid
+# systolic_data_with_centroids = calculate_centroid(systolic_data_rotated)
+# systolic_data_normalized = normalize_to_centroid(systolic_data_with_centroids)
+# systolic_data_normalized.to_csv('indexed_points_sys.csv', index=False)
+# # Plot rotated points for diastolic data
+# plot_rotated_points(systolic_data_rotated, point1_sys, point2_sys, 'plots_dia', optimal_angle_sys)
 
 import os
 
@@ -98,12 +98,12 @@ def read_data(file_path, delimiter='\t'):
 
     return df
 
-def find_farthest_points(df):
+def find_farthest_points(frame_data):
     """
-    Finds the two farthest points in the DataFrame based on x_coord and y_coord.
+    Finds the two farthest points within a single frame based on x_coord and y_coord.
 
     Parameters:
-    df (pd.DataFrame): DataFrame with columns ['frame_id', 'x_coord', 'y_coord', 'z_coord']
+    frame_data (pd.DataFrame): DataFrame with columns ['x_coord', 'y_coord']
 
     Returns:
     tuple: Indices of the two farthest points and the maximum distance between them
@@ -111,7 +111,7 @@ def find_farthest_points(df):
     max_distance = 0
     point1, point2 = None, None
 
-    for (index1, row1), (index2, row2) in combinations(df.iterrows(), 2):
+    for (index1, row1), (index2, row2) in combinations(frame_data.iterrows(), 2):
         distance = np.sqrt((row1['x_coord'] - row2['x_coord'])**2 + (row1['y_coord'] - row2['y_coord'])**2)
         if distance > max_distance:
             max_distance = distance
@@ -137,6 +137,19 @@ def rotate_points(df, angle):
     df['y_coord_rotated'] = df['x_coord'] * sin_angle + df['y_coord'] * cos_angle
     
     return df
+
+def process_frame(frame_data):
+    point1, point2, _ = find_farthest_points(frame_data)
+    optimal_angle = find_optimal_rotation(frame_data, point1, point2)
+    rotated_frame_data = rotate_points(frame_data, optimal_angle)
+    return rotated_frame_data, point1, point2, optimal_angle
+
+def process_all_frames(df):
+    results = []
+    for frame_id, frame_data in df.groupby('frame_id'):
+        rotated_frame_data, point1, point2, optimal_angle = process_frame(frame_data)
+        results.append((rotated_frame_data, point1, point2, optimal_angle))
+    return results
 
 def x_coord_distance(df, point1, point2):
     """
@@ -292,11 +305,11 @@ systolic_data = systolic_data.groupby('frame_id').apply(lambda x: x.iloc[::int(n
 
 # Find farthest points for diastolic data
 point1_dia, point2_dia, _ = find_farthest_points(diastolic_data)
-optimal_angle_dia = find_optimal_rotation(diastolic_data, point1_dia, point2_dia)
+optimal_angle_dia = find_optimal_rotation(diastolic_data, point1_dia, point2_dia) # prorbably mistake by not grouping by frame id
 diastolic_data_rotated = rotate_points(diastolic_data, optimal_angle_dia)
 df_indexed_dia = indexing_points(diastolic_data_rotated)
 # normalize to centroid
-diastolic_data_with_centroids = calculate_centroid(diastolic_data_rotated)
+diastolic_data_with_centroids = calculate_centroid(df_indexed_dia)
 diastolic_data_normalized = normalize_to_centroid(diastolic_data_with_centroids)
 diastolic_data_normalized.to_csv('indexed_points_dia.csv', index=False)
 # Plot rotated points for diastolic data
@@ -308,12 +321,39 @@ optimal_angle_sys = find_optimal_rotation(systolic_data, point1_sys, point2_sys)
 systolic_data_rotated = rotate_points(systolic_data, optimal_angle_sys)
 df_indexed_sys = indexing_points(systolic_data_rotated)
 # normalize to centroid
-systolic_data_with_centroids = calculate_centroid(systolic_data_rotated)
+systolic_data_with_centroids = calculate_centroid(df_indexed_sys)
 systolic_data_normalized = normalize_to_centroid(systolic_data_with_centroids)
 systolic_data_normalized.to_csv('indexed_points_sys.csv', index=False)
 # Plot rotated points for diastolic data
 plot_rotated_points(systolic_data_rotated, point1_sys, point2_sys, 'plots_dia', optimal_angle_sys)
 
+# Process diastolic data
+diastolic_results = process_all_frames(diastolic_data)
+diastolic_processed_frames = [result[0] for result in diastolic_results]
+diastolic_data_rotated = pd.concat(diastolic_processed_frames)
+diastolic_data_rotated = indexing_points(diastolic_data_rotated)
+diastolic_data_with_centroids = calculate_centroid(diastolic_data_rotated)
+diastolic_data_normalized = normalize_to_centroid(diastolic_data_with_centroids)
+diastolic_data_normalized.to_csv('indexed_points_dia.csv', index=False)
+
+# Plot each frame's results
+for frame_result in diastolic_results:
+    rotated_frame_data, point1, point2, optimal_angle = frame_result
+    plot_rotated_points(rotated_frame_data, point1, point2, 'plots_dia', optimal_angle)
+
+# Repeat for systolic data
+systolic_results = process_all_frames(systolic_data)
+systolic_processed_frames = [result[0] for result in systolic_results]
+systolic_data_rotated = pd.concat(systolic_processed_frames)
+systolic_data_rotated = indexing_points(systolic_data_rotated)
+systolic_data_with_centroids = calculate_centroid(systolic_data_rotated)
+systolic_data_normalized = normalize_to_centroid(systolic_data_with_centroids)
+systolic_data_normalized.to_csv('indexed_points_sys.csv', index=False)
+
+# Plot each frame's results
+for frame_result in systolic_results:
+    rotated_frame_data, point1, point2, optimal_angle = frame_result
+    plot_rotated_points(rotated_frame_data, point1, point2, 'plots_sys', optimal_angle)
 
 
 

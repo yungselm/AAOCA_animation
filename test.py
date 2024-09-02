@@ -26,17 +26,122 @@ print(df_dia.head(50))
 print(df_sys.head(50))
 print(df_dia.columns)
 
-def define_plane(df):
+def calculate_normal_vector(p0, p1, p2):
+    v1 = p1 - p0
+    v2 = p2 - p0
+    normal_vector = np.cross(v1, v2)
+    normal_vector_normalized = normal_vector / np.linalg.norm(normal_vector)
+    return normal_vector_normalized
+
+def calculate_distance(centroid1, centroid2):
+    return np.linalg.norm(centroid1 - centroid2)
+
+def calculate_normal_vector(p0, p1, p2):
+    v1 = p1 - p0
+    v2 = p2 - p0
+    normal_vector = np.cross(v1, v2)
+    normal_vector_normalized = normal_vector / np.linalg.norm(normal_vector)
+    return normal_vector_normalized
+
+def calculate_distance(centroid1, centroid2):
+    return np.linalg.norm(centroid1 - centroid2)
+
+def define_planes(df_dia, df_sys):
+    # Initialize separate result lists for dia and sys
+    results_dia = []
+    results_sys = []
+
+    # Determine the length of the shorter dataframe
+    min_length = min(len(df_dia['frame_id'].unique()), len(df_sys['frame_id'].unique()))
+
+    for i in range(min_length - 1):
+        # Get the data for the current frame and the next frame for both dia and sys
+        frame_current_dia = df_dia[df_dia['frame_id'] == i]
+        frame_next_dia = df_dia[df_dia['frame_id'] == i + 1]
+        
+        frame_current_sys = df_sys[df_sys['frame_id'] == i]
+        frame_next_sys = df_sys[df_sys['frame_id'] == i + 1]
+
+        # Ensure the index is sorted
+        frame_current_dia = frame_current_dia.sort_values('index')
+        frame_next_dia = frame_next_dia.sort_values('index')
+        
+        frame_current_sys = frame_current_sys.sort_values('index')
+        frame_next_sys = frame_next_sys.sort_values('index')
+
+        interframe_centroid_dia = np.mean(frame_current_dia[['centroid_x', 'centroid_y', 'centroid_z']].values, axis=0)
+        interframe_centroid_sys = np.mean(frame_current_sys[['centroid_x', 'centroid_y', 'centroid_z']].values, axis=0)
+
+        # Loop through each index in the current frame except the last one
+        for j in range(min(len(frame_current_dia), len(frame_current_sys)) - 1):
+            # Process dia
+            p0_dia = frame_current_dia.iloc[j][['x_coord', 'y_coord', 'z_coord']].values
+            p1_dia = frame_current_dia.iloc[j + 1][['x_coord', 'y_coord', 'z_coord']].values
+            p2_dia = frame_next_dia.iloc[j][['x_coord', 'y_coord', 'z_coord']].values
+            p3_dia = frame_next_dia.iloc[j + 1][['x_coord', 'y_coord', 'z_coord']].values
+
+            centroid_dia = np.mean([p0_dia, p1_dia, p2_dia, p3_dia], axis=0)
+            normal_vector_dia = calculate_normal_vector(p0_dia, p1_dia, p2_dia)
+
+            distance_centroids_dia = calculate_distance(interframe_centroid_dia, centroid_dia)
+
+            results_dia.append({
+                'points': [p0_dia, p1_dia, p2_dia, p3_dia],
+                'centroid': centroid_dia,
+                'normal_vector': normal_vector_dia,
+                'translation_distances': None,  # Dia does not require translation distance
+                'color': 'grey'
+            })
+
+            # Process sys
+            p0_sys = frame_current_sys.iloc[j][['x_coord', 'y_coord', 'z_coord']].values
+            p1_sys = frame_current_sys.iloc[j + 1][['x_coord', 'y_coord', 'z_coord']].values
+            p2_sys = frame_next_sys.iloc[j][['x_coord', 'y_coord', 'z_coord']].values
+            p3_sys = frame_next_sys.iloc[j + 1][['x_coord', 'y_coord', 'z_coord']].values
+
+            centroid_sys = np.mean([p0_sys, p1_sys, p2_sys, p3_sys], axis=0)
+            normal_vector_sys = calculate_normal_vector(p0_sys, p1_sys, p2_sys)
+            distance_centroids_sys = calculate_distance(interframe_centroid_sys, centroid_sys)
+
+            # Calculate translation distance
+            translation_distance = 0
+            if results_sys:  # Only calculate if there's a previous entry
+                translation_distance = calculate_distance(results_sys[-1]['centroid'], centroid_sys)
+                if distance_centroids_sys < distance_centroids_dia:
+                    translation_distance *= -1
+
+            results_sys.append({
+                'points': [p0_sys, p1_sys, p2_sys, p3_sys],
+                'centroid': centroid_sys,
+                'normal_vector': normal_vector_sys,
+                'translation_distances': translation_distance,
+                'color': None
+            })
+
+    return results_dia, results_sys
+
+def color_scale_translation(results_sys):
+    max_dist = max([result['translation_distances'] for result in results_sys])
+    min_dist = min([result['translation_distances'] for result in results_sys])
+
+    max = 'blue'
+    min = 'red'
+
     pass
 
-def calculate_center(df):
-    pass
+# Example usage
+results_dia, results_sys = define_planes(df_dia, df_sys)
 
-def normal_vector(df):
-    pass
+# Print the first few results for checking
+print("Dia Results:", results_dia[:2])
+print("Sys Results:", results_sys[:2])
 
-def calculate_translation(df):
-    pass
+# print maximum value of translation distance of results_sys
+max_translation_distance = max([result['translation_distances'] for result in results_sys])
+min_translation_distance = min([result['translation_distances'] for result in results_sys])
+print("Max Translation Distance:", max_translation_distance)
+print("Min Translational Distance:", min_translation_distance)
+
 
 def plot_3d_planes(df):
     """
@@ -84,5 +189,108 @@ def plot_3d_planes(df):
 
 # Example usage with the provided DataFrame
 # Make sure your DataFrame is loaded as `df`
-plot_3d_planes(df_dia)
+plot_3d_planes(df_sys)
 
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
+def calculate_plane_center(v0, v1, v2, v3):
+    """
+    Calculates the center of a plane defined by four points.
+    
+    Parameters:
+    v0, v1, v2, v3 (list): Coordinates of the four points defining the plane.
+    
+    Returns:
+    np.array: The center (centroid) of the plane.
+    """
+    return np.mean([v0, v1, v2, v3], axis=0)
+
+def calculate_distance(point1, point2):
+    """
+    Calculates the Euclidean distance between two points in 3D space.
+    
+    Parameters:
+    point1, point2 (np.array): Coordinates of the two points.
+    
+    Returns:
+    float: The Euclidean distance between the points.
+    """
+    return np.linalg.norm(point1 - point2)
+
+def process_frames(df_sys, df_dia):
+    """
+    Processes systolic and diastolic data to calculate plane translations between consecutive frames.
+    
+    Parameters:
+    df_sys, df_dia (pd.DataFrame): Systolic and Diastolic datasets.
+    
+    Returns:
+    list: List of distances between systolic and diastolic centroids for each frame.
+    """
+    translation_distances = []
+    unique_frames = sorted(df_sys['frame_id'].unique())
+
+    for i in range(len(unique_frames) - 1):
+        frame_sys_1 = df_sys[df_sys['frame_id'] == unique_frames[i]]
+        frame_sys_2 = df_sys[df_sys['frame_id'] == unique_frames[i + 1]]
+
+        frame_dia_1 = df_dia[df_dia['frame_id'] == unique_frames[i]]
+        frame_dia_2 = df_dia[df_dia['frame_id'] == unique_frames[i + 1]]
+
+        # Sort points by index to ensure correct pairing
+        frame_sys_1 = frame_sys_1.sort_values(by='index')
+        frame_sys_2 = frame_sys_2.sort_values(by='index')
+
+        frame_dia_1 = frame_dia_1.sort_values(by='index')
+        frame_dia_2 = frame_dia_2.sort_values(by='index')
+
+        # Loop over corresponding points and calculate plane centers
+        for j in range(len(frame_sys_1) - 1):
+            # Define plane for systolic
+            v0_sys = frame_sys_1.iloc[j][['x_coord_normalized', 'y_coord_normalized', 'z_coord']].values
+            v1_sys = frame_sys_2.iloc[j][['x_coord_normalized', 'y_coord_normalized', 'z_coord']].values
+            v2_sys = frame_sys_2.iloc[(j + 1) % len(frame_sys_2)][['x_coord_normalized', 'y_coord_normalized', 'z_coord']].values
+            v3_sys = frame_sys_1.iloc[(j + 1) % len(frame_sys_1)][['x_coord_normalized', 'y_coord_normalized', 'z_coord']].values
+
+            center_sys = calculate_plane_center(v0_sys, v1_sys, v2_sys, v3_sys)
+
+            # Define plane for diastolic
+            v0_dia = frame_dia_1.iloc[j][['x_coord_normalized', 'y_coord_normalized', 'z_coord']].values
+            v1_dia = frame_dia_2.iloc[j][['x_coord_normalized', 'y_coord_normalized', 'z_coord']].values
+            v2_dia = frame_dia_2.iloc[(j + 1) % len(frame_dia_2)][['x_coord_normalized', 'y_coord_normalized', 'z_coord']].values
+            v3_dia = frame_dia_1.iloc[(j + 1) % len(frame_dia_1)][['x_coord_normalized', 'y_coord_normalized', 'z_coord']].values
+
+            center_dia = calculate_plane_center(v0_dia, v1_dia, v2_dia, v3_dia)
+
+            # Calculate the distance between systolic and diastolic centers
+            translation_distance = calculate_distance(center_sys, center_dia)
+            translation_distances.append(translation_distance)
+    
+    return translation_distances
+
+def plot_translation_distances(translation_distances, output_dir='plots'):
+    """
+    Plots the translation distances over frame indices.
+    
+    Parameters:
+    translation_distances (list): List of distances between systolic and diastolic centroids for each frame.
+    output_dir (str): Directory to save the plot.
+    """
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(len(translation_distances)), translation_distances, marker='o', linestyle='-', color='b')
+    plt.title('Translation Distances Between Systolic and Diastolic Planes')
+    plt.xlabel('Frame Index')
+    plt.ylabel('Translation Distance')
+    plt.grid(True)
+
+    # Save plot
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    plt.savefig(os.path.join(output_dir, 'translation_distances.png'))
+    plt.show()
+
+# Example usage
+translation_distances = process_frames(df_sys, df_dia)
+plot_translation_distances(translation_distances)
