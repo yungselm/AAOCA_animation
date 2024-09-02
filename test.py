@@ -26,6 +26,18 @@ print(df_dia.head(50))
 print(df_sys.head(50))
 print(df_dia.columns)
 
+def define_plane(df):
+    pass
+
+def calculate_center(df):
+    pass
+
+def normal_vector(df):
+    pass
+
+def calculate_translation(df):
+    pass
+
 def plot_3d_planes(df):
     """
     Plots 3D planes between corresponding points from consecutive frames.

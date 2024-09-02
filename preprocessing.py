@@ -1,24 +1,70 @@
-# import os
-# import hydra
-# from omegaconf import DictConfig
+import os
+import hydra
+from omegaconf import DictConfig
 
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import pandas as pd
+import numpy as np
+import pandas as pd
+pd.options.mode.chained_assignment = None  # default='warn'
+import warnings
+warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
+warnings.simplefilter(action='ignore', category=DeprecationWarning)
+import matplotlib.pyplot as plt
+from itertools import combinations
 
-# @hydra.main(version_base=None, config_path='.', config_name='config')
-# class Preprocessing:
-#     """Creates a longitudinal dataset, by adding repeat_instance columns with a suffix _+ number of repeat instance, 
-#     and further translating the different arms also to longitudinal format"""
-#     def __init__(self, config: DictConfig) -> None:
-#         self.config = config
+@hydra.main(version_base=None, config_path='.', config_name='config')
+class Preprocessing:
+    """ Takes coordinates from IVUS frames, and reduces the number of points, rotates the contour
+    and further translates the whole contour to the centroid.
+    
+    Parameters: 
+    Input path, output path and number of points per contour can be defined in the config
+    file. 
+    
+    Returns: Dataframe with adjusted coordinates."""
 
-#     def __call__(self):
-#         self.diastolic_data = pd.read_csv(self.config.preprocessing.redcap_database)
-#         self.systolic_data = pd.read_csv(self.config.preprocessing.redcap_database)
+    def __init__(self, config: DictConfig) -> None:
+        self.config = config
+        self.diastolic_data = read_data(self.config.preprocessing.diastolic_df)
+        self.systolic_data = read_data(self.config.preprocessing.systolic_df)
+        self.diastolic_data = self.diastolic_data.reset_index()
+        self.systolic_data = self.systolic_data.reset_index()
+
+    def __call__(self, config: DictConfig) -> None:
+        self.diastolic_data = pd.read_csv(self.config.preprocessing.redcap_database)
+        self.systolic_data = pd.read_csv(self.config.preprocessing.redcap_database)
+        dia_df = self.diastolic_data.groupby('frame_id').apply(lambda x: x.iloc[::int(np.ceil(len(x)/config.preprocessing.n_points))]).reset_index(drop=True)
+        sys_df = self.systolic_data.groupby('frame_id').apply(lambda x: x.iloc[::int(np.ceil(len(x)/config.preprocessing.n_points))]).reset_index(drop=True)
         
-#         return self.diastolic_data, self.systolic_data
+        
+        return self.diastolic_data, self.systolic_data
 
+# For every frame_id keep only 20 evenly spaced points
+diastolic_data = 
+systolic_data = systolic_data.groupby('frame_id').apply(lambda x: x.iloc[::int(np.ceil(len(x)/20))]).reset_index(drop=True)
+
+# Find farthest points for diastolic data
+point1_dia, point2_dia, _ = find_farthest_points(diastolic_data)
+optimal_angle_dia = find_optimal_rotation(diastolic_data, point1_dia, point2_dia)
+diastolic_data_rotated = rotate_points(diastolic_data, optimal_angle_dia)
+df_indexed_dia = indexing_points(diastolic_data_rotated)
+# normalize to centroid
+diastolic_data_with_centroids = calculate_centroid(diastolic_data_rotated)
+diastolic_data_normalized = normalize_to_centroid(diastolic_data_with_centroids)
+diastolic_data_normalized.to_csv('indexed_points_dia.csv', index=False)
+# Plot rotated points for diastolic data
+plot_rotated_points(diastolic_data_rotated, point1_dia, point2_dia, 'plots_dia', optimal_angle_dia)
+
+# Find farthest points for diastolic data
+point1_sys, point2_sys, _ = find_farthest_points(systolic_data)
+optimal_angle_sys = find_optimal_rotation(systolic_data, point1_sys, point2_sys)
+systolic_data_rotated = rotate_points(systolic_data, optimal_angle_sys)
+df_indexed_sys = indexing_points(systolic_data_rotated)
+# normalize to centroid
+systolic_data_with_centroids = calculate_centroid(systolic_data_rotated)
+systolic_data_normalized = normalize_to_centroid(systolic_data_with_centroids)
+systolic_data_normalized.to_csv('indexed_points_sys.csv', index=False)
+# Plot rotated points for diastolic data
+plot_rotated_points(systolic_data_rotated, point1_sys, point2_sys, 'plots_dia', optimal_angle_sys)
 
 import os
 

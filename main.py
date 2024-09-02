@@ -14,6 +14,9 @@ def data_preparation(config: DictConfig) -> None:
         diastolic, systolic = preprocessing()  # call class
         print(diastolic.head())
         print(systolic.head())
+    
+    if config.translation(config: DictConfig) -> None:
+        
 
 
 if __name__ == '__main__':
