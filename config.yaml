@@ -11,9 +11,9 @@ hydra:
 preprocessing:
   active: True
   plotting: True
-  diastolic_df: 'home/yungselm/Documents/AAOCA_animation/test_csv_files/diastolic_contours.csv'
-  systolic_df: 'home/yungselm/Documents/AAOCA_animation/test_csv_files/systolic_contours.csv'
-  output_dir: 'home/yungselm/Documents/AAOCA_animation'
+  diastolic_df: "C:/WorkingData/Documents/2_Coding/Python/AAOCA_animation/test_csv_files/diastolic_contours.csv"
+  systolic_df: "C:/WorkingData/Documents/2_Coding/Python/AAOCA_animation/test_csv_files/systolic_contours.csv"
+  output_dir: "C:/WorkingData/Documents/2_Coding/Python/AAOCA_animation"
   n_points: 20
   
 translation:

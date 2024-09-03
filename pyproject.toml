@@ -18,7 +18,7 @@ matplotlib = "*"
 tqdm = "*"
 colorama = "*"
 tk = "*"
-pyqt5 = "*"
+# pyqt5 = "*"
 
 [tool.poetry.group.dev.dependencies]
 autohooks = "^23.1.0"
