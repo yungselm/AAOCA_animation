@@ -290,7 +290,6 @@ def plot_rotated_points(df, point1, point2, output_dir, angle):
         plt.close()
 
 
-
 # Read data
 diastolic_data = read_data('test_csv_files/diastolic_contours.csv')
 systolic_data = read_data('test_csv_files/systolic_contours.csv')
@@ -354,7 +353,6 @@ systolic_data_normalized.to_csv('indexed_points_sys.csv', index=False)
 for frame_result in systolic_results:
     rotated_frame_data, point1, point2, optimal_angle = frame_result
     plot_rotated_points(rotated_frame_data, point1, point2, 'plots_sys', optimal_angle)
-
 
 
 def plot_indices(df, output_dir, angle, frame_id):

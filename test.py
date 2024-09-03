@@ -72,7 +72,8 @@ def define_planes(df_dia, df_sys):
         ax = fig.add_subplot(111, projection='3d')
         ax.scatter(frame_current_dia['x_coord'], frame_current_dia['y_coord'], frame_current_dia['z_coord'], c='r', marker='o')
         ax.scatter(frame_next_dia['x_coord'], frame_next_dia['y_coord'], frame_next_dia['z_coord'], c='b', marker='o')
-        ax.scatter(interframe_centroid_dia[0], interframe_centroid_dia[1], interframe_centroid_dia[2], c='g', marker='o')
+        ax.scatter(interframe_centroid_dia[0][0], interframe_centroid_dia[0][1], interframe_centroid_dia[0][2], c='pink', marker='o')
+        ax.scatter(frame_current_dia['centroid_x'], frame_current_dia['centroid_y'], frame_current_dia['centroid_z'], c='g', marker='o')
         plt.show()
 
         # Loop through each index in the current frame except the last one
